@@ -2,7 +2,7 @@
 title: "Homework: Finding Your Way in R and Python"
 execute:
   error: true
-author: "Your Name"
+author: "Dada Zhang"
 output: html_document
 ---
 
@@ -18,7 +18,7 @@ Consider the 6 counting words examples in the [textbook module](https://srvander
 
 ---
 
-Replace this line of text with your 2-3 sentences about script-mode, interactive mode, and command-line mode in R and Python
+The **script-mode** provides a sequence of commands in a text file. When working with data, we prefer to combine scripts with the **interactive model** to help us *track* which commands we run (but we run the script interactively). The **command-line** helps to execute the code (line by line or single line) and it does not involve in interactive model.
 
 ---
 
@@ -31,10 +31,22 @@ In this section, you'll demonstrate that you understand how to solve simple math
 
 $$a^2 + b^2 = c^2$$
 
-Use the chunk below to define variables $a$, $b$, and $c$, where you define values (of your choice) for $a$ and $b$. Based on the choice of $a$ and $b$, determine $c$ using the mathematical formula. You may need to find the square root function in R to make this work.
+Use the chunk below to define variables $a$, $b$, and $c$, where you define the values of $a$ and $b$, and $c$ is determined mathematically. You may need to find the square root function in R to make this work.
 
 ```{r pythagorean-theorem-r}
 # Your pythagorean theorem code goes here
+## Define values of a and b
+a <- 3
+b <- 4
+## Determine c value
+c = sqrt(a*a + b*b)
+sprintf("c is: %d", c) #sprintf() with integer variable. %f is float
+
+## Try another way: Define a function
+PyTh <- function(a, b){
+  c <- sqrt(a*a + b*b) #determine c 
+}
+sprintf("c is: %f",PyTh(1,1))
 
 ```
 
@@ -46,7 +58,43 @@ Use the chunk below to define variables $a$, $b$, and $c$, and then define $x1$ 
 
 ```{python quad-formula-py}
 # Your quadratic formula code goes here
+def root (a, b, c):
+  dis = b*b - 4*a*c ## define discriminant (Ref: The discriminant: two distinct roots)
+  
+  ## discriminant > 0: two distinct real roots
+  if dis > 0:
+    x1 = (-b + dis**0.5 )/(2*a) ## define x1 and x2
+    x2 = (-b - dis**0.5 )/(2*a)
+    return x1, x2
+  ## discriminant = 0: one real root
+  elif dis == 0:
+    x = (-b + 0 )/(2*a)
+    return x
+  ## discriminant < 0: no real roots
+  else:
+    return "There is no real root"
 
+## Try 3 conditions example: 
+## > 0: 1, 2, -3; 
+## = 0: 1, -4, 4; 
+## < 0: 1, 3, 3
+a = 1
+b = 2
+c = -3
+print("The solution (roots) are : ", root(a,b,c))
+
+a = 1
+b = -4
+c = 4
+print("The solution (roots) are : ", root(a,b,c))
+
+a = 1
+b = 3
+c = 3
+print("The solution (roots) are : ", root(a,b,c))
+
+## Reference
+## The discriminant: two distinct roots. https://www.pearson.com/content/dam/one-dot-com/one-dot-com/uk/documents/subjects/mathematics/Worksheets/Chapter2/Example-14-Chapter-2-The-discriminant-two-distinct-roots.pdf
 ```
 
 # Debugging practice
@@ -74,11 +122,101 @@ salary
 
 ------------------------------------------------------------------------
 
-The problem with the data is:
+The problem with the data is:\
+The Salary variable has different contents. For example, '$67,872.00' is different from '59083', '54000', and '26309'. Due to the differences in Salary, we cannot display the data correctly in the plot. Additionally, the plot does not show entire information based on the data. For instance, we cannot see the whole name. To solve this issue, we can modify the limits of axes.
 
 Here is how I solved the problem:
 
 ```{r cleaning-the-data-r}
 # Your implementation code goes here
+## First, changes all values in Salary with same format, then plot data.
+## Replace xx.00 as with integer value (Ref: see below)
+salary$Salary[salary$Salary == "$67,872.00"] <- "67872"
+salary
+## Plot
+ggplot(salary, aes(x = Hire.Year, y = Salary, label = Name, group = 1)) + 
+  geom_label() + 
+  ## Add title y vs. x
+  ggtitle("Salary vs. Hire Year") + 
+  ## Center the title
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ## change axis labels
+  labs(x = "Hire Year", y = "Salary (dollar)") +
+  ## change grid/limits
+  scale_x_continuous(breaks = unique(salary$Hire.Year), limits = c(1994,2004))
 
 ```
+Reference:
+
+1. Replace all 0 to 0 in a data frame: https://stackoverflow.com/questions/69841991/how-to-replace-all-0-0-to-0-in-a-data-frame
+
+2. Error: `geom_line()`: Each group consists of only one observation. https://stackoverflow.com/questions/27082601/ggplot2-line-chart-gives-geom-path-each-group-consist-of-only-one-observation
+
+
+```{r cleaning-the-data2-r}
+## Another way to solve the problem
+## Read data again and make changes on plot
+salary <- read.table("02-data.tsv", sep = "\t", header = T)
+
+## Replace xx.00 as with integer value (Ref: see below)
+salary$Salary[salary$Salary == "$67,872.00"] <- "$67,872"
+## Replace values with new values
+salary$Salary <- gsub('54000', '$54,000', 
+                      gsub('26309', '$26,309', 
+                           gsub('59083', '$59,083', 
+                                     salary$Salary)))
+#gsub('.*^', '$', obj): adding $ to all values
+
+## Check salary
+salary
+
+## Plot
+ggplot(salary, aes(x = Hire.Year, y = Salary, label = Name, group = 1)) + 
+  geom_label() + 
+  ## Add title y vs. x
+  ggtitle("Salary vs. Hire year") + 
+  ## Center the title
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(x = "Hire Year", y = "Salary") +
+  scale_x_continuous(breaks = seq(1994, 2004, by = 1), limits = c(1994, 2004))
+```
+
+```{python figure-py}
+# Implementation code in Python
+#%pip install package
+import pandas as pd
+import matplotlib.pyplot as plt
+salary = pd.read_csv('02-data.tsv', sep = '\t')
+## rename columns
+#salary = salary.rename(columns = {'Hire Year': 'Hire_Year'})
+
+## modify differences
+#salary.Salary[0] #checking obvious element
+salary['Salary'] = salary['Salary'].replace(to_replace = "$67,872.00", value = 67872).astype(int)
+print(salary)
+
+y = salary['Salary'].values 
+x = salary['Hire Year'].values
+z = salary.Name
+
+plt.scatter(x, y)
+plt.title("Salary vs. Hire Year")
+plt.xlabel("Hire Year")
+plt.ylabel("Salary (dollar)")
+plt.xlim(1994,2004)
+plt.ylim(20000, 70000)
+for i in range(len(z)):
+    plt.annotate(z[i], (x[i], y[i]))
+
+plt.grid()
+plt.show()
+
+```
+
+Reference:
+
+1. Add data labels in a scatter plot using python Matplotlib|Eugene Tsai. Medium. https://medium.com/@marvelouskgc/three-ways-to-add-labels-to-each-data-point-in-a-scatter-plot-in-python-matplotlib-eugene-tsai-42e4094dc07e
+
+
+
+
